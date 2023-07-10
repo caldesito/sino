@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juego de Oposiciones</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .correcta {
+            color: green;
+        }
+
+        .incorrecta {
+            color: red;
+        }
+
+        .nota {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Juego de Oposiciones</h1>
+
+        <div id="pregunta-div">
+            <h3 id="pregunta" class="mb-3"></h3>
+            <div class="form-group">
+                <label for="respuesta-input">Tu respuesta:</label>
+                <input type="text" class="form-control" id="respuesta-input" onkeydown="verificarConEnter(event)">
+            </div>
+            <button class="btn btn-primary" onclick="verificarRespuesta()">Verificar</button>
+        </div>
+
+        <p id="resultado" class="mt-3"></p>
+        <p id="puntuacion" class="mt-3"></p>
+        <p id="nota" class="nota"></p>
+
+        <h4 class="mt-4">Historial de Respuestas</h4>
+        <ul id="historial-list" class="list-group mt-2"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/string-similarity/umd/string-similarity.min.js"></script>
+    <script>
+        var diccionario = {
+            "articulo 1.1 CC":"Las fuentes del ordenamiento juridico español son la ley, la costumbre y los principios generales del derecho",
+           "articulo 1903 CC":"La obligacion de reparar el daño es exigible, no solo por los actos u omisione spropios, sino por los de aquellas personas de quienes se debe responder. Cesa la responsabilidad cuando prueben que emplearon toda la diligencia de un buen padre de familia para prevenir el daño",
+           "articulo 1904 CC parrafo primero":"El que paga el daño causado por sus dependientes puede repetir de estos lo que hubiese satisfecho",
+           "articulo 1904 CC parrafo segundo":"Cuando se trate de centros docentes de enseñanza no superior, sus titulares podran exigir de los profesores las cantidades satisfechas, si hubiesen incurrido en dolo o culpa grave en el ejercicio de sus funciones que fuesen causa del daño",
+           "articulo 1905 y 1906 CC":"Supuestos de responsabilidad por los daños causados por los animales",
+           "articulo 1907 y 1910 CC":"Supuestos de responsabilidad por los daños causados por las cosas inanimadas",
+           "articulo 1902 CC":"El que por acción u omisión causa daño a otro, interviniendo culpa o negligencia, está obligado a reparar el daño causado",
+           "articulo 1895 CC":"Cuando se recibe alguna cosa que no habia derecho a cobrar, y que por error ha sido indebidamente entregada, surge la obligacion de restituirla",
+           "articulo 1156 CC":"Las obligaciones se extinguen: por el pago o cumplimiento; por la perdida de la cosa debida; por la condonacion de la deuda; por la confusion de los derechos de acreedor y deduor; por la compensacion; por la novacion",
+           "articulo 1166 CC":"El deudor de una cosa no puede obligar a su acreedor a que reciba otra diferente, aun cuando fuere de igual o mayor valor que la debida; tampoco en las obligaciones de hacer podra ser sustituido un hecho por otro contra la voluntad del acreedor",
+           "articulo 1157 CC":"No se entendera pagada una deuda sino cuando completamente se hubiese entregado la cosa o hecho la prestacion en que la obligacion consistia",
+           "articulo 1158 CC":"Puede hacer el pago cualquier persona, tenga o no interes en el cumplimiento de la obligacion, ya lo conozca o lo apruebe o ya lo ignore el deudor",
+           "articulo 1171 CC":"El pago debera ejecutarse en el lugar que hubiese designado la obligacion. No habiendose expresado y trantandose de entretgar una cosa determinada, debera hacerse el pago donde esta existia en el momento de constituirse la obligacion; En cualquier otro caso, el lugar del pago sera el domicilio del deudor",
+           "articulo 1172 CC":"El que tuviere varias deudas de una misma especie en favor de un solo acreedor podra declarar al tiempo de hacer el pago a cual de ellas debe aplicarse",
+           "articulo 1173 CC":"Si la deuda produce interes, no podra estimarse hecho el pago por cuenta del capital mientras no esten cubiertos los intereses",
+           "articulo 1175 CC":"El deudor puede ceder sus bienes a los acreedores en pago de sus deudas. esta cesion, salvo pacto en contrario, solo libera a aquel de responsabilidad por el importe liquido de los bienes cedidos",
+           "articulo 1182 CC":"Quedara extinguida la obligacion que consista en entregar una cosa determianda cuando esta se perdiere o destruyere sin culpa del deudor y antes de haberse este constituido en mora",
+           "articulo 1184 CC":"Tambien quedara liberado el deudor en las obligaciones de hacer cuando la prestacion resultare legal o fisicamente imposible",
+           "articulo 1190 CC":"La condonacion de la deuda principal extinguira las obligaciones accesorias; pero la de estas dejara subsistente la primera",
+           "articulo 1192 CC":"Quedara extinguida la obligacion desde que se reunan en una misma persona los conceptos de acreedor y deudor",
+           "articulo 1194 CC":"La confusion no extingue la deuda mancomunada sino en la porcion correspondiente al acreedor o deudor en quien concurran los dos conceptos",
+           "articulo 1195 CC":"Tendra lugar la compensacion cuando dos personas, por derecho propio, sean reciprocamente acreedoras y deudoras la una de la otra",
+           "articulo 1202 CC":"El efecto de la compensacion es extinguir una y otra deuda en la cantidad concurrente, aunque no tengan conocimiento de ellas los acreedores y deudores",
+           "articulo 1199 CC":"Las deudas pagaderas en diferentes lugares pueden compensarse mediante indemnizacion de los gastos de transporte o cambio al lugar de pago",
+           "articulo 1201 CC":"Si una persona tuviere contra si varias deudas compensables se observara en el orden de la compensacion lo dispuesto respecto a la imputacion de pagos",
+           "articulo 1203 CC":"Las obligaciones pueden modificarse: 1) vaariando su objeto o sus condiciones principales; 2) sustituyendo la persona del deudor; 3) subrogando a un tercero en los derechos del acreedor",
+           "articulo 1208 CC":"La novacion es nula si lo fuere tambien la obligacion primitiva, salvo que la causa de nulidad solo pueda ser invocada por el deudor, o que la ratificacion convalide los actos nulos en su origen",
+           "articulo 1204 CC":"Para que una obligacion quede extinguida por otra que la sustituya es preciso que asi se declare terminantemente, o que la antigua y la nueva sean de todo punto incompatibles",
+           "articulo 1207 CC":"Cuando la obligacion principal se extinga por efecto de la novacion, solo podran subsistir las obligaciones accesorias en cuanto aprovechen a terceros que no hubiesen prestado su consentimiento",
+           "articulo 1205 CC":"La novacion, que consiste en sustituirse un nuevo deudor en lugar del primitivo, puede hacerse sin el conocimiento de este, pero no sin el consentimiento del acreedor",
+           "articulo 1206 CC":"La insolvencia del nuevo deudor, que hubiese sido aceptado por el acreedor, no hara revivir la accion de este contra el deudor primitivo, salvo que dicha insolvencia hubiese sido anterior y publica o conocida del deudor al delegar su deuda",
+           "articulo 1212 CC":"La subrogacion transfiere al subrogado el credito con los derechos a el anexos, ya contra el deudor, ya contra los terceros, sean fiadores o poseedores de las hipotecas",
+           "articulo 1101 CC":"Quedan sujetos a la indemnizacion de los daños y perjuicios causados los que en el cumplimiento de sus obligaciones incurrieran en dolo, negligencia o morosidad, y los que de cualquier modo contravinieren el tenor de aquellas",
+           "articulo 1105 CC":"Fuera de los casos expresamente mencionados en la ley, y de los en que asi lo declare la obligacion, nadie respondera de aquellos ducesos que no hubieran podido preverse, o que, previstos, fueran inevitables",
+           "articulo 1269 CC":"Cuando con palabras o maquinaciones insidiosas de parte de uno de los contratantes, es inducido al otro a celebrar un contrato que, sin ellas, no hubiere hecho", 
+           "articulo 1102 CC":"La responsabilidad procedente del dolo es exigible en todas las obligaciones. La renuncia de la accion para ahcerla efectiva es nula",
+           "articulo 1104 CC":"La culpa o negligencia del deudor consiste en la omision de aquella diligencia que exija la naturaleza de la obligacion y corresponda a las circunstancias de las personas, del tiempo y del lugar",
+           "articulo 1183 CC":"Siempre que la cosa se hubiese perdido en poder del deudor, se presumira que la perdida ocurrio por su culpa y no por caso fortuito, salvo prueba en contrario",
+           "articulo 1100 CC":"Incurren en mora los obligados a dar o hacer alguna cosa desde que el acreedor les exija judicial o extrajudicialmente el cumplimiento de la obligacion; En las obligaciones reciprocas ninguno de los obligados incurre en mora si el otro no cumple o no se allana a cumplir debidmente lo que le incumbe. Desde que uno de los obligados cumple su obligacion, empieza la mora para el otro",
+           "articulo 1105 CC":"Fuera de los casos expresamente mencionados en la ley, y de los en que asi lo declare la obligacion, nadie respondera de aquellos sucesos que no hubieran podido preverse, o que, previstos, fueran inevitables",
+           "articulo 1106 CC":"La indemnizacion de daños y perjuicios comprende no solo el valor de la perdida que haya sufrido, sino tambien el de la ganancia que haya dejado de obtener el acreedor",
+           "articulo 1111 CC":"Los acreedores, despues de haber perseguido los bienes de que este en posesion el deudor para realizar cuanto se les debe, pueden ejercitar todos los derechos y acciones de este con el mismo fin, exceptuando los que sean inherentes a su persona. Pueden tambien impugnar los actos que el deudor haya realizado en fraude de su derecho",
+           "articulo 1297 CC":"Se presumen celebrados en fraude de acreedores todos aquellos contratos por virtud de los cuales el deudor enajenare bienes a titulo gratuito; Tambien se presumen fraudulentas las enajenaciones a titulo oneroso, hechas por aquellas personas contra las cuales se hubiese pronunciado antes sentencia condenatoria en cualquier instancia o expedido mandamiento de embargo de bienes",
+           "articulo 1299 CC":"La accion para pedir la rescision dura cuatro años",
+           "articulo 299 LEC":"1) Interrogatorio de las partes; 2) Documentos publicos; 3) Documentos privados; 4) Dictamen de peritos; 5) Reconocimiento judicial; 6) Testigos",
+           "articulo 1216 CC":"Son documentos publicos los autorizados por un notario o empleado publico competente con las solemnidades requeridas por la ley",
+           "articulo 1227 CC":"La fecha de un documento privado no se contara respecto de terceros, sino desde el dia que hubiese sido incorporado o inscrito en un registro publico, desde la muerte de cualquiera de los que lo firmaron, o desde el dia en que s eentregase a un funcionario publico por razon de su oficio",
+           "articulo 1928 CC":"El remanente del caudal del deudor, despues de pagados los creditos que gocen de preferencia con relacion a determinados bienes, muebles o inmuebles, se acumulara a los bienes libres que aquel tuviere para el pago de los demas creditos; Los que, gozando de preferencia con relacion a determinados bienes, muebles o inmuebles, no hubiesen sido totalmente satisfechos con el importe de estos, lo seran, en cuanto al deficit, por el orden y en el lugar que les corresponda segun su respectiva naturaleza",
+           "articulo 269 LC":"Los creditos concursales se clasificaran, a efectos del concurso, en privilegiados, ordinarios y subordinados. Los creditos privilegiados se clasificaran, a su vez, en creditos con privilegio especial, si afectan a determinados bienes o derechos de la masa activa, y creditos con privilegio general, si afectan a la totalidad de esa masa. En el concurso no se admitira ningun privilegio o preferencia que no este reconocido en la ley. Se clasificaran como creditos ordinarios aquellos que en esta ley no tengan la consideracion de credito privilegiado o subordinado",
+           "articulo 272 LC":"A los efectos del convenio, acuerdos de refinanciacion y acuerdos extrajudiciales de pago, el privilegio especial estara limitado al valor razonable del bien o derecho sobre el que se hubiera constituido la garantia, con las deducciones establecidas en esta ley. El importe del credito que exceda del reconocido como privilegio especial sera clasificado segun corresponda",
+           "articulo 647 CC":"La donacion sera revocada a instancia del donante, cuando el donatario haya dejado de cumplir alguna de las condiciones que aquel impuso",
+           "articulo 37 LH":"Las acciones rescisorias, revocatorias y resolutorias no se daran contra tercero que haya inscrito los titulos de sus respectivos derechos conforme a lo prevenido en esta ley",
+           "articulo 644 CC":"Toda donacion entre vivos hecha por persona que no tenga hijos ni descendientes sera revocable por el mero hecho de ocurrir cualquiera de los casos siguientes: 1) Que el donante tenga, despues de la donacion, hijos, aunque sean postumos; 2) Que resulte vivo el hijo del donante, que este reputaba muerto cuando hizo la donacion",
+           "articulo 645 CC":"Rescindida la donacion, se restituiran al donante los bienes donados o su valor si el donatario los hubiere vendido. Cuando los bienes donados no puedieran ser restituidos, se apreciaran por lo que valian al tiempo de la donacion",
+           "articulo 648 CC":"Tambien podra ser revocada la donacion a instancia del donante, por causa de ingratitud, en los casos siguientes: 1) Si el donatario cometiese algun delito contra la persona, el honor, o los bienes del donante; 2) Si el donatario imputase al donante alguno de los delito que dan lugar a procedimiento de oficio o acusacion publica, aunque lo pruebe. A menos que el delito se hubiese cometido contra el mismo donatario, su conyuge o los hijos constituidos bajo su autoridad; 3) Si le niega indebidamente alimentos",
+           "articulo 641 CC":"Podra establecerse validamente la reversion en favor de solo el donador para cualquier caso y circunstancias, pero no en favor de otras personas sino en los mismos casos y con iguales limitaciones que determina este codigo para las sustituciones testamentarias; La reversion estipulada por el donante en favor de tercero contra lo dispuesto en el parrafo anterior es nula; pero no producira la nulidad de la donacion",
+           "articulo 467 CC":"El usufructo da derecho a disfrutar los bienes ajenos con la obligacion de conservar su forma y sustancia, a no ser que el titulo de su constitucion o la ley autoricen otra cosa",
+           "articulo 522 CC":"Terminado el usufructo, se entregara al propietario la cosa usufructuada, salvo el derecho de retencion que compete al usufructuario o a sus herederos por los desembolsos de que deban ser reintegrados. Verificada la entrega, se cancelara la fianza o hipoteca",
+           "articulo 34 LH":"El tercero que de buena fe adquiera a titulo oneroso algun derecho de persona que en el registro aparezca con facultades para transmitirlo, sera mantenido en su adquisicion, una vez que haya inscrito su derecho, aunque despues se anule o resuelva el del otorgante por virtud de causas que no consten en el mismo registro. La buena fe del tercero se presume siempre, mientras no se pruebe que conocia la inexactitud del registro. Los adquirentes a titulo gratuito no gozaran de mas proteccion registral que la que tuviere su causante o transferente",
+           "articulo 1473 CC":"Si una misma cosa se hubiese vendido a diferentes compradores, la propiedad se transferira a la persona que primero haya tomado posesion de ella de buena fe, si fuera mueble. Si fuera inmueble, la propiedad pertenecera al adquirente que antes la haya inscrito en el registro. Cuando no haya inscripcion pertenecera la pripiedad a quien de buena fe sea primero en la posesion; y faltando esta, a quien presente titulo de fecha mas antigua, siempre que haya buena fe",
+           "articulo 609 CC":"La propiedad se adquiere y transmite por ocupacion. La propiedad y los demas derechos sobre los bienes se adquieren y transmiten por la ley, por donacion, por sucesion testada o intestada y por consecuencia de ciertos contratos mediante la tradicion. Puede tambien adquirirse por medio de la prescipcion",
+           "articulo 1254 CC":"El contrato existe desde que una o varias personas consienten en obligarse, respecto de otra u otras, a dar alguna cosa o prestar algun servicio",
+           "articulo 1261 CC":"No hay contrato sino cuando concurren los requisitos siugientes: a) consentimiento de los contratantes; b) objeto cierto que sea materia de contrato; c) causa de la obligacion que se establezca"
+
+            // Aquí se incluyen los demás artículos del diccionario
+        };
+
+        var aciertos = 0;
+        var intentos = 0;
+
+        function verificarRespuesta() {
+            var respuestaInput = document.getElementById('respuesta-input');
+            var respuesta = respuestaInput.value.trim().toLowerCase();
+
+            var preguntaDiv = document.getElementById('pregunta-div');
+            var resultadoP = document.getElementById('resultado');
+            var puntuacionP = document.getElementById('puntuacion');
+            var notaP = document.getElementById('nota');
+            var historialList = document.getElementById('historial-list');
+
+            var pregunta = preguntaDiv.dataset.pregunta;
+            var respuestaCorrecta = diccionario[pregunta];
+
+            var newItem = document.createElement("li");
+            newItem.classList.add("list-group-item");
+
+            var rating = stringSimilarity.compareTwoStrings(respuesta, respuestaCorrecta.toLowerCase());
+            var threshold = 0.6; // Establece aquí el umbral de similitud mínimo que desees
+
+            newItem.innerHTML = '<span class="pregunta">' + pregunta + '</span><br>' +
+                                '<span class="respuesta-dada">Respuesta dada: ' + respuesta + '</span><br>' +
+                                '<span class="respuesta-correcta">Respuesta correcta: ' + respuestaCorrecta + '</span>';
+
+            if (rating >= threshold) {
+                newItem.classList.add("correcta");
+                aciertos++;
+            } else {
+                newItem.classList.add("incorrecta");
+            }
+
+            historialList.prepend(newItem);
+
+            intentos++;
+            var puntuacionTexto = 'Puntuación: ' + aciertos + ' aciertos de ' + intentos + ' intentos';
+            puntuacionP.innerText = puntuacionTexto;
+
+            var nota = (aciertos / intentos) * 10;
+            notaP.innerText = 'Nota: ' + nota.toFixed(2);
+
+            respuestaInput.value = '';
+            generarPregunta();
+        }
+
+        function generarPregunta() {
+            var keys = Object.keys(diccionario);
+            var randomIndex = Math.floor(Math.random() * keys.length);
+            var pregunta = keys[randomIndex];
+
+            var preguntaDiv = document.getElementById('pregunta-div');
+            preguntaDiv.dataset.pregunta = pregunta;
+            preguntaDiv.querySelector('#pregunta').innerText = pregunta;
+        }
+
+        function verificarConEnter(event) {
+            if (event.keyCode === 13) {
+                verificarRespuesta();
+            }
+        }
+
+        generarPregunta();
+    </script>
+</body>
+</html>
